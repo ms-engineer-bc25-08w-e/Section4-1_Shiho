@@ -75,13 +75,13 @@ router.get("/",(req, res) => {
     };
 
     // categoryIdチェック
-    if(categoryId !== undefined){
+    if(categoryId !== undefined && typeof categoryId !== "string"){
         return res.status(400).json({
             error:{
                 code: "INVALID_QUERY",
                 message: "Invalid parameter",
                 details: {
-                    categoryId: { categoryId },
+                    categoryId,
                     response: "categoryId out of range"
                 },
             },           
@@ -94,14 +94,14 @@ router.get("/",(req, res) => {
         // t:1件の取引
         (t) => {
             // income / expenseが一致しなければ除外
-            if (t.type !== type){
+            if (typeof type === "string" && t.type !== type){
                 return false;
             }
             // 文字列.startsWith(検索文字列 [, 開始位置]) t.dateがそのmonthで始まらなければ除外
             if (month === "string" && !t.date.startsWith(month)) {
                 return false;
             };
-            if (t.categoryId !== categoryId){
+            if (typeof categoryId === "string" && t.categoryId !== categoryId){
                 return false;
             }
             // どの条件にも引っかからなかった取引はitemsに含める
@@ -120,15 +120,18 @@ router.get("/:id",(req, res) => {
 
     const found = transactions.find((t) => t.id === id);
 
-    if(!found) res.status(404).json({
+    if(!found) {
+        return res.status(404).json({
         error:{
         code: "NOT_FOUND",
         message: "transaction not found",
         details: {
             id,
             response: "The specified transaction does not exist"
-        }}}
-    )
+        },
+        },
+        });
+    }
     return res.json(found);
 });
 
