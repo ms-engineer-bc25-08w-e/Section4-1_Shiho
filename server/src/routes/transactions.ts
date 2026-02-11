@@ -1,14 +1,14 @@
 // transactions用のAPIルーターをまとめて定義
 
 import { Router } from "express";
+import { IncExpBase } from "../incExp";
 
 const router = Router();
 
-type IncExpType = "income" | "expense"  ;
 type Transaction = { 
     id: string,
     date: string,
-    type: IncExpType,
+    type: IncExpBase,
     categoryId: string,
     categoryName: string,
     title: string,
@@ -98,7 +98,7 @@ router.get("/",(req, res) => {
                 return false;
             }
             // 文字列.startsWith(検索文字列 [, 開始位置]) t.dateがそのmonthで始まらなければ除外
-            if (month === "string" && !t.date.startsWith(month)) {
+            if (typeof month === "string" && !t.date.startsWith(month)) {
                 return false;
             };
             if (typeof categoryId === "string" && t.categoryId !== categoryId){

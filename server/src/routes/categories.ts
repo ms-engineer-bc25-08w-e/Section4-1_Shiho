@@ -1,12 +1,11 @@
 // categories用のAPIルーターをまとめて定義
 
 import { Router } from "express";
+import { IncExpWithBoth } from "../incExp";
 
 const router = Router();
 
-
-type IncExpType = "income" | "expense" | "both" ;
-type Category = { id:string; name: string; type:IncExpType } ;
+type Category = { id:string; name: string; type:IncExpWithBoth } ;
 
 //DBの代わりのダミーデータ
 const categories: Category[] = [

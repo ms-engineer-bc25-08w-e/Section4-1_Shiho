@@ -1,0 +1,7 @@
+# コミット除外ファイル 
+.env
+.env.*
+!.env.example
+
+# コミット除外フォルダ 
+node_modules/
