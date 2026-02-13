@@ -1,0 +1,13 @@
+services:
+  api:
+    build: ./server
+    ports:
+      - "4000:4000"
+      - "9229:9229"
+    environment:
+      PORT: "4000"
+      LOG_LEVEL: "debug"
+    command: ["npm", "run", "dev:debug"]
+    volumes:
+      - ./server:/app
+      - /app/node_modules

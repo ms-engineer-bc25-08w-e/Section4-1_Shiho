@@ -2,6 +2,7 @@
 
 import { Router } from "express";
 import { IncExpBase } from "../incExp";
+import { logger } from "../logger";
 
 const router = Router();
 
@@ -37,24 +38,49 @@ const transactions: Transaction[] = [{
  }
 ];
 
+// エラー型
+type AppErr = Error & { status?: number; code?: string; details?: unknown};
+
+// エラー作成
+function createError(status: number, code: string, message: string, details?: unknown): AppErr{
+    const err: AppErr = new Error(message);
+    err.status = status;
+    err.code = code;
+    err.details = details;
+    return err;
+}
+
 // GET /transactions
-router.get("/",(req, res) => {
+router.get("/",(req, res, next) => {
+    try{   
+        logger.debug("Get /transactions called") // 「/transactions が呼ばれましたよ」というログを出す
+        logger.debug(`query: ${JSON.stringify(req.query)}`) // パラメータの中身をログに出す、JSON.stringify():文字列に変換
+
+    // テスト用：error=trueの場合は強制エラー
+    // if(req.query.error === "true"){
+    //     const err = createError(
+    //         500, 
+    //         "TEST_ERROR", 
+    //         "Intentional error for testing",
+    //         {query: req.query}
+    //     );
+    //     return next(err);
+    // }
+
     const { month, type, categoryId} = req.query;
     // Express + TypeScript では req.queryの型は最初から以下の通り定義されている
     // string | string[] | ParsedQs | ParsedQs[] | undefined
 
     // typeチェック
     if(type !== undefined && type !== "income" && type !== "expense"){
-        return res.status(400).json({
-            error:{
-                code: "INVALID_QUERY",
-                message: "Invalid parameter",
-                details: {
+        return next(
+            createError(400,"INVALID_QUERY","Invalid parameter",
+                {
                     type,
                     response: "type out of range"
-                },
-            },           
-        });
+                }
+            )           
+        );
     };
 
     // monthチェック
@@ -62,30 +88,22 @@ router.get("/",(req, res) => {
     // 正規表現:^→先頭、\d{4}→数字4桁（年）、-→ハイフン、\d{2}→数字2桁（月）、$→末尾
     // 正規表現.test(文字列):正規表現のメソッド、monthがYYYY-01~12形式かをチェック
     if(month !== undefined && (typeof month !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/ .test(month))){
-        return res.status(400).json({
-            error:{
-                code: "INVALID_QUERY",
-                message: "Invalid parameter",
-                details: {
-                    month,
-                    response: "month out of range"
-                },
-            },           
-        });
+        return next(
+            createError(400, "INVALID_QUERY", "Invalid parameter",{
+                month,
+                response: "month out of range"
+            })         
+        );
     };
 
     // categoryIdチェック
     if(categoryId !== undefined && typeof categoryId !== "string"){
-        return res.status(400).json({
-            error:{
-                code: "INVALID_QUERY",
-                message: "Invalid parameter",
-                details: {
-                    categoryId,
-                    response: "categoryId out of range"
-                },
-            },           
-        });
+        return next(
+            createError(400, "INVALID_QUERY", "Invalid parameter",{
+                categoryId,
+                response: "categoryId out of range"
+            })          
+        );
     };
 
     // transactions（全取引データ）から条件に合うものだけを取り出してitemsにする
@@ -111,26 +129,26 @@ router.get("/",(req, res) => {
     );
 
     return res.json({items, count: items.length});
+
+    } catch (err) {
+        next(err);
+    }
 }
 );
 
 // GET /transactions/:id
-router.get("/:id",(req, res) => {
+router.get("/:id",(req, res, next) => {
     const { id } = req.params;
 
     const found = transactions.find((t) => t.id === id);
 
     if(!found) {
-        return res.status(404).json({
-        error:{
-        code: "NOT_FOUND",
-        message: "transaction not found",
-        details: {
-            id,
-            response: "The specified transaction does not exist"
-        },
-        },
-        });
+        return next(
+            createError(404, "NOT_FOUND", "transaction not found",{
+                id,
+                response: "The specified transaction does not exist"
+            })
+        );
     }
     return res.json(found);
 });
