@@ -1,4 +1,5 @@
 "use strict";
+
 //Expressアプリに共通設定を行いURLごとにルーターを割り当てる場所
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };

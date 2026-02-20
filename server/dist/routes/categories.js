@@ -1,17 +1,10 @@
 "use strict";
+
 // categories用のAPIルーターをまとめて定義
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const router = (0, express_1.Router)();
-//DBの代わりのダミーデータ
-const categories = [
-    { "id": "c_salary", "name": "給与", "type": "income" },
-    { "id": "c_food", "name": "食費", "type": "expense" },
-    { "id": "c_transpo", "name": "交通費", "type": "expense" },
-    { "id": "c_sideinc", "name": "副収入", "type": "income" },
-    { "id": "c_entmt", "name": "娯楽", "type": "both" },
-    { "id": "c_other", "name": "その他", "type": "both" }
-];
+
 // GET /categories
 router.get("/", (req, res) => {
     // categoriesにアクセスしたときの処理

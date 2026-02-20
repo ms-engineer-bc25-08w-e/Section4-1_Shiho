@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+*_bk.*
 
 # コミット除外フォルダ 
 node_modules/
+/src/generated/prisma
