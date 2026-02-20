@@ -1,28 +1,10 @@
 "use strict";
+
 // transactions用のAPIルーターをまとめて定義
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const router = (0, express_1.Router)();
-//DBの代わりのダミーデータ
-const transactions = [{
-        id: "t_001",
-        date: "2025-12-24",
-        type: "expense",
-        categoryId: "c_food",
-        categoryName: "食費",
-        title: "スーパー",
-        amount: 1000
-    },
-    {
-        id: "t_002",
-        date: "2025-12-25",
-        type: "income",
-        categoryId: "c_salary",
-        categoryName: "給与",
-        title: "12月給与",
-        amount: 250000
-    }
-];
+
 // GET /transactions
 router.get("/", (req, res) => {
     const { month, type, categoryId } = req.query;

@@ -3,40 +3,11 @@
 import { Router } from "express";
 import { IncExpBase } from "../incExp";
 import { logger } from "../logger";
+import { prisma } from "../prisma";
+import { Prisma } from "../generated/prisma"; 
+
 
 const router = Router();
-
-type Transaction = { 
-    id: string,
-    date: string,
-    type: IncExpBase,
-    categoryId: string,
-    categoryName: string,
-    title: string,
-    amount: number
-    } ;
-
-
-//DBの代わりのダミーデータ
-const transactions: Transaction[] = [{
-    id: "t_001",
-    date: "2025-12-24",
-    type: "expense",
-    categoryId: "c_food",
-    categoryName: "食費",
-    title: "スーパー",
-    amount: 1000
-},
-{
-    id: "t_002",
-    date: "2025-12-25",
-    type: "income",
-    categoryId: "c_salary",
-    categoryName: "給与",
-    title: "12月給与",
-    amount: 250000
- }
-];
 
 // エラー型
 type AppErr = Error & { status?: number; code?: string; details?: unknown};
@@ -51,21 +22,11 @@ function createError(status: number, code: string, message: string, details?: un
 }
 
 // GET /transactions
-router.get("/",(req, res, next) => {
-    try{   
-        logger.debug("Get /transactions called") // 「/transactions が呼ばれましたよ」というログを出す
-        logger.debug(`query: ${JSON.stringify(req.query)}`) // パラメータの中身をログに出す、JSON.stringify():文字列に変換
+router.get("/", async(req, res, next) => { //DB接続するのでasync入れる
 
-    // テスト用：error=trueの場合は強制エラー
-    // if(req.query.error === "true"){
-    //     const err = createError(
-    //         500, 
-    //         "TEST_ERROR", 
-    //         "Intentional error for testing",
-    //         {query: req.query}
-    //     );
-    //     return next(err);
-    // }
+    try{   
+        logger.debug("Get /transactions called") // 「/transactionsが呼ばれた」というログを出す
+        logger.debug(`query: ${JSON.stringify(req.query)}`) // パラメータの中身をログに出す、JSON.stringify():文字列に変換
 
     const { month, type, categoryId} = req.query;
     // Express + TypeScript では req.queryの型は最初から以下の通り定義されている
@@ -107,29 +68,53 @@ router.get("/",(req, res, next) => {
     };
 
     // transactions（全取引データ）から条件に合うものだけを取り出してitemsにする
-    const items = transactions.filter(
+    const where: Prisma.TransactionWhereInput = {}; // where句の型指定
 
-        // t:1件の取引
-        (t) => {
-            // income / expenseが一致しなければ除外
-            if (typeof type === "string" && t.type !== type){
-                return false;
-            }
-            // 文字列.startsWith(検索文字列 [, 開始位置]) t.dateがそのmonthで始まらなければ除外
-            if (typeof month === "string" && !t.date.startsWith(month)) {
-                return false;
-            };
-            if (typeof categoryId === "string" && t.categoryId !== categoryId){
-                return false;
-            }
-            // どの条件にも引っかからなかった取引はitemsに含める
-            return true;
-            
-        }
+    if (typeof type === "string") where.type = type;
+
+    if (typeof categoryId === "string") where.categoryId = categoryId;
+
+    if (typeof month === "string") {
+        const start = new Date(`${month}-01T00:00:00.000Z`); // その月の1日 00:00:00
+        const end = new Date(start);
+        end.setMonth(end.getMonth() + 1); // getMonth():今月を取得、setMonth(n):月をnに変更
+
+        // date列に対する条件セット
+        // Prismaのフィルター構文、gte:>=、lt:<
+        where.date = { gte: start, lt:end }; 
+    }
+
+    const rows = await prisma.transaction.findMany({
+        where,
+        orderBy: [{date: "desc"}],
+        include: {category: true},
+    });
+
+    const items = rows.map((t) => ({
+        id: t.id,
+        date: t.date.toISOString().slice(0, 10), // .toISOString():Date→ISO形式の文字列に変換する
+        type: t.type as IncExpBase, // 独自の型の為型を明示的に指定
+        categoryId: t.categoryId,
+        categoryName: t.category.name,
+        title: t.title,
+        amount: t.amount,
+    })   
     );
 
-    return res.json({items, count: items.length});
+    // イメージ
+    // Prisma.findMany()
+    //         ↓
+    //    SQL 実行
+    //         ↓
+    // rows（DB結果）
+    //         ↓
+    // map() (データ加工)
+    //         ↓
+    // items（整形済データ）
+    //         ↓
+    // res.json()
 
+    return res.json({items, count: items.length});
     } catch (err) {
         next(err);
     }
@@ -137,20 +122,137 @@ router.get("/",(req, res, next) => {
 );
 
 // GET /transactions/:id
-router.get("/:id",(req, res, next) => {
-    const { id } = req.params;
+router.get("/:id",async(req, res, next) => {
+    try {
+        const { id } = req.params;
 
-    const found = transactions.find((t) => t.id === id);
+        const t = await prisma.transaction.findUnique ({ // PrimaryKeyやUniqueのカラムをWHERE句に指定してデータを取得する場合はfindUniqueを使用する必要がある
+            where: { id } ,
+            include: { category: true},
+        });
 
-    if(!found) {
-        return next(
-            createError(404, "NOT_FOUND", "transaction not found",{
-                id,
-                response: "The specified transaction does not exist"
-            })
-        );
+        if(!t) {
+            return next(
+                createError(404, "NOT_FOUND", "transaction not found",{
+                    id,
+                    response: "The specified transaction does not exist"
+                })
+            );
+        }
+        return res.json({
+            id: t.id,
+            date: t.date.toISOString().slice(0, 10),
+            type: t.type as IncExpBase,
+            categoryId: t.categoryId,
+            title: t.title,
+            amount: t.amount,
+        });
+    } catch (err) {
+        next(err);
     }
-    return res.json(found);
 });
+
+
+// POST /transactions
+
+router.post("/", async (req, res, next) =>{
+    try {
+        const body = req.body as {
+            date?: string;
+            type?: "income" | "expense";
+            categoryId?: string;
+            title?: string;
+            amount?: number;
+        };
+
+    const { date, type, categoryId, title, amount } = body;
+
+    if(
+        typeof date !== "string"|| (type !== "income" && type !== "expense") || typeof categoryId !== "string" || typeof title !== "string" || typeof amount !== "number"
+    ){
+        return res.status(400).json ({
+            error:{ code: "INVALID_BODY", message: "Invalid request body" },
+        });
+    }
+
+    const created = await prisma.transaction.create({
+        data: {
+            date: new Date(date),
+            type,
+            categoryId,
+            title,
+            amount,
+        },
+        include: {category: true},
+    });
+
+    return res.status(201).json({
+        id: created.id,
+        date: created.date.toISOString().slice(0, 10),
+        type: created.type,
+        categoryId: created.categoryId,
+        categoryName: created.category.name,
+        title: created.title,
+        amount: created.amount,
+
+    });
+    } catch (e) {
+        next(e);
+    }
+}
+);
+
+
+// PUT /transactions/:id（更新）
+router.put("/:id", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    const body = req.body as {
+      date?: string;
+      type?: "income" | "expense";
+      categoryId?: string;
+      title?: string;
+      amount?: number;
+    };
+
+    // 最小：存在するものだけ更新
+    const updated = await prisma.transaction.update({
+      where: { id },
+      data: {
+        ...(typeof body.date === "string" ? { date: new Date(body.date) } : {}),
+        ...(body.type === "income" || body.type === "expense" ? { type: body.type } : {}),
+        ...(typeof body.categoryId === "string" ? { categoryId: body.categoryId } : {}),
+        ...(typeof body.title === "string" ? { title: body.title } : {}),
+        ...(typeof body.amount === "number" ? { amount: body.amount } : {}),
+      },
+      include: { category: true },
+    });
+
+    return res.json({
+      id: updated.id,
+      date: updated.date.toISOString().slice(0, 10),
+      type: updated.type,
+      categoryId: updated.categoryId,
+      categoryName: updated.category.name,
+      title: updated.title,
+      amount: updated.amount,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// DELETE /transactions/:id（削除）
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    await prisma.transaction.delete({ where: { id } });
+    return res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
 
 export default router;

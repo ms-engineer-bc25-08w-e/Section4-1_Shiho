@@ -1,4 +1,5 @@
 "use strict";
+
 // APIサーバーが生きているか確認するための最小ルーターを定義する
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express"); // Expressが提供するRouter機能を読み込む

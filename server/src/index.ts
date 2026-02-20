@@ -6,10 +6,6 @@ const app = createApp();
 
 const port = Number(process.env.PORT ?? 4000); //process.env.PORT=.envから取得、?? 4000=PORTが未設定なら4000を使う
 
-// app.listen(port, () => {
-//   console.log(`API server listening on http://localhost:${port}`); // 指定したポートでHTTPサーバーを起動する
-// });
-
 app.listen(port, () => {
   logger.info(`API server listening on http://localhost:${port}`); // 指定したポートでHTTPサーバーを起動する
 });

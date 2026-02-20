@@ -36,19 +36,3 @@ return app; // 完成したExpressアプリを外に渡す
 }
 
 
-// イメージ
-// [ request ]
-//      ↓
-// [ requestId ]
-//      ↓
-// [ accessLog ]
-//      ↓
-// [ debugLog ]
-//      ↓
-//     ├── /health        → healthRouter
-//     ├── /categories    → categoriesRouter
-//     └── /transactions  → transactionsRouter
-//      ↓
-// [ errorHandler ]（エラー時のみ）
-//      ↓
-// [ response ]
