@@ -1,16 +1,41 @@
-export default async function Page() {
-  const res = await fetch("http://localhost:4000/health", {
-    cache: "no-store",
-  });
-  const data = await res.json();
+import HomeClient from "./components/HomeClient";
+import type { Transaction } from "@/features/transactions/types/transaction";
 
-  return (
-    <main style={{ padding: 16 }}>
-      <h1>API Health Check</h1>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </main>
-  );
+export default async function Page(){
+  let initialTransactions: Transaction[] = [];
+
+  try {
+    const res = await fetch("http://localhost:4000/transactions",{
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      initialTransactions = data.items ?? [];
+    }
+  } catch {
+    // 失敗時は空配列で表示
+  }
+
+  return <HomeClient initialTransactions={initialTransactions} />;
+  
 }
+
+
+
+
+// export default async function Page() {
+//   const res = await fetch("http://localhost:4000/health", {
+//     cache: "no-store",
+//   });
+//   const data = await res.json();
+
+//   return (
+//     <main style={{ padding: 16 }}>
+//       <h1>API Health Check</h1>
+//       <pre>{JSON.stringify(data, null, 2)}</pre>
+//     </main>
+//   );
+// }
 
 
 // import Image from "next/image";
