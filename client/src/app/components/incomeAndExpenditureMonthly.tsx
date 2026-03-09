@@ -1,48 +1,46 @@
 import type { Transaction } from "@/features/transactions/types/transaction";
-import {useMemo} from "react";
+import { useMemo } from "react";
 import MonthlySummaryTable from "@/features/transactions/ui/Templates/monthlySummaryList";
 
-type Props = {
-    transactions: Transaction[];
+export const aggregateMonthly = (transactions: Transaction[]) => {
+  const map = new Map<string, { income: number; expense: number }>();
+
+  for (const t of transactions) {
+    // 異常系への備え：date が無い場合
+    if (!t.date) continue;
+
+    const month = t.date.slice(0, 7);
+    const current = map.get(month) ?? { income: 0, expense: 0 }; // 月のデータがまだMapになければ{0, 0} からスタートする
+
+    // incomeなら収入、それ以外（支出）なら支出に金額をプラス
+    if (t.type === "income") current.income += t.amount;
+    else current.expense += t.amount;
+
+    map.set(month, current); // イメージ 2025-01：{収入100, 支出50}
+  }
+
+  // map.entries():mapの中身（月と金額のペア）を全て取り出す、Array.from():普通の配列の形にする
+  return Array.from(map.entries()).map(([month, value]) => ({
+    month,
+    income: value.income,
+    expense: value.expense,
+    result: value.income - value.expense,
+  }));
 };
 
-type MonthlyItems ={
-    month: string; // "2025-12"みたいな形式を想定
-    income: number;
-    expense: number;
-    result: number; //income - expense
-}
+type Props = {
+  transactions: Transaction[];
+};
 
-const MonthlySummary = ({transactions}:Props) => {
-    const rows = useMemo<MonthlyItems[]>(() => {
-        const map = new Map <string,{income:number,expense:number}>();//Map型。Map<キーの型,値の型>
+const MonthlySummary = ({ transactions }: Props) => {
+  // useMemo(() => 関数, [依存するもの])、[transactions]が変わったらaggregateMonthly(値)を再計算する
+  const rows = useMemo(() => aggregateMonthly(transactions), [transactions]);
 
-        for(let t of transactions){
-            const month = t.date.slice(0,7); //"2025-12"みたいな形式を想定
-            const current = map.get(month) ?? {income:0,expense:0}; //monthに対応する値を取得。0は当該月が無い時の初期値。
-
-            if(t.type === "income")current.income += t.amount;
-            else current.expense += t.amount;
-
-            map.set(month,current); //Mapに保存
-        }
-
-
-        return Array.from(map.entries()).map(([month,value])=>({ //キーと値のペアを順番に取り出す。分割代入。
-                month,
-                income:value.income,
-                expense:value.expense,
-                result:value.income - value.expense,
-            }));
-    },[transactions]);
-
-   
-return (
+  return (
     <div className="grid gap-4">
-        <MonthlySummaryTable rows={rows} />
+      <MonthlySummaryTable rows={rows} />
     </div>
-);
-
+  );
 };
 
 export default MonthlySummary;

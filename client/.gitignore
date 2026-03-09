@@ -43,3 +43,6 @@ next-env.d.ts
 
 # TEST
 \__tests__
+
+#BK
+*_bk.*
