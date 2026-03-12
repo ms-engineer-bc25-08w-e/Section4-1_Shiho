@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id  String  @id @default(cuid()) // @id→主キー（PRIMARYKEY）@default(cuid())→自動で一意IDを生成
+  name String // カテゴリ名（食費、交通費等）
+  type  CategoryType // enumを使用
+  transactions  Transaction[] // カテゴリに紐づく取引一覧
+  createdAt DateTime  @default(now()) // レコード作成時刻を自動保存
+  updatedAt DateTime  @updatedAt // 更新時刻を自動保存
+
+  @@index([type]) // インデックス作成
+
+}
+
+model Transaction {
+  id  String  @id @default(cuid())
+  date  DateTime
+  type  TxType
+  title String
+  amount  Int
+  categoryId  String
+
+  /* category:フィールド名、Category:型、fields:[categoryId]TransactionのcategoryId列を外部キーとして使う、 references:[id]どこを参照するか？Categoryのid列を参照する */
+  category  Category @relation(fields: [categoryId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([date]) 
+  @@index([type])
+  @@index([categoryId])  
+
+}
+
+enum CategoryType { // enum:固定文字セット
+  income
+  expense
+  coth
+}
+
+enum TxType {
+  income
+  expense
+}
