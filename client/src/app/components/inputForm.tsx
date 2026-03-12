@@ -44,7 +44,7 @@ const TransactionForm = (props: Props) => {
 
   const [formDraft, setDraft] = useState<Draft>(() => {
     if (isEditProps(props)) {
-      const { id, ...rest } = props.detailDraft; //id以外をrestへ代入
+      const { id: _, ...rest } = props.detailDraft; //id以外をrestへ代入
       return rest;
     }
     return {
