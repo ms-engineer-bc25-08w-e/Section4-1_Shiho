@@ -8,9 +8,10 @@ import { ErrorBanner } from "@/features/transactions/ui/molecules/ErrorBanner";
 
 type Props = {
   initialTransactions: Transaction[]; //初期トランザクション
+  isListPage?: boolean;
 };
 
-export default function HomeClient({ initialTransactions }: Props) {
+export default function HomeClient({ initialTransactions, isListPage }: Props) {
   //Props型に定義された中のinitialTransactionsを取り出す（分割代入）,一覧表示 / 新規追加
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
 
@@ -59,7 +60,7 @@ export default function HomeClient({ initialTransactions }: Props) {
       </div>
 
       {/* Homeコンポーネントを表示し入出金データ(transactions)、追加処理の関数(handleAdd)をpropsとして渡す */}
-      <Home transactions={transactions} onAdded={handleAdded} onDelete={handleDelete} />
+      <Home transactions={transactions} onAdded={handleAdded} onDelete={handleDelete} isListPage={isListPage} />
     </>
   );
 }

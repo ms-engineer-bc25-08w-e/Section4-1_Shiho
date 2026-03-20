@@ -50,7 +50,7 @@ model Transaction {
 enum CategoryType { // enum:固定文字セット
   income
   expense
-  coth
+  both
 }
 
 enum TxType {
