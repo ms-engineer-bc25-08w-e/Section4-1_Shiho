@@ -6,26 +6,36 @@ interface Transaction {
   categoryName: string;
   type: "income" | "expense";
 }
-
+//
 const formatData = (transactions: Transaction[], targetType: string[]) => {
+  // Record<Keys, Type>型引数
   const summary: Record<string, number> = {};
 
+  // forEach()与えられた関数を配列の各要素に対して一度ずつ実行
   transactions.forEach((t) => {
-    // 判定：入力が "支出" でも "expense" でも拾えるように配列でチェック
+    // 判定：入力が"支出"でも"expense"でも拾えるように配列でチェック
     if (targetType.includes(t.type)) {
       const name = t.categoryName || "その他";
+      // 連想配列、カテゴリ毎の合計計算
       summary[name] = (summary[name] || 0) + t.amount;
     }
   });
 
-  return Object.entries(summary)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
+  return (
+    // イメージ：変換前{ "食費": 5000, "光熱費": 12000 }→変換後：[ ["食費", 5000], ["光熱費", 12000] ]
+    Object.entries(summary)
+
+      // イメージ：変換前["食費", 5000]→変換後{ name: "食費", value: 5000 }
+      .map(([name, value]) => ({ name, value }))
+
+      // 昇順
+      .sort((a, b) => b.value - a.value)
+  );
 };
 
 export const CategoryChart = ({ transactions }: { transactions: Transaction[] }) => {
   // デバッグ用：データが来ているかコンソールで確認
-  console.log("全データ:", transactions);
+  // console.log("全データ:", transactions);
 
   // 収入と支出を集計（念のため日本語・英語両方の可能性を考慮）
   const incomeChartData = formatData(transactions, ["収入", "income"]);
@@ -45,29 +55,3 @@ export const CategoryChart = ({ transactions }: { transactions: Transaction[] })
     </div>
   );
 };
-
-// // データを集計する関数
-// const formatDataForChart = (transactions: Transaction[]) => {
-//   const summary: Record<string, number> = {};
-
-//   transactions.forEach((t) => {
-//     // 支出(expense)だけを集計する場合
-//     if (t.type === "expense") {
-//       const name = t.categoryName || "その他";
-//       summary[name] = (summary[name] || 0) + t.amount;
-//     }
-//   });
-
-//   return Object.entries(summary).map(([name, value]) => ({
-//     name,
-//     value,
-//   }));
-// };
-
-// export const CategoryChart = ({ transactions }: { transactions: Transaction[] }) => {
-//   // 1. ロジック：データをグラフ用に加工
-//   const chartData = formatDataForChart(transactions);
-
-//   // 2. 表示：Templateにデータを渡して丸投げ
-//   return <CategoryChartTemplate data={chartData} />;
-// };
