@@ -94,8 +94,17 @@ const TransactionForm = (props: Props) => {
     })();
   }, []);
 
-  //React.FormEvent<HTMLFormElement>:HTML<form>タグのイベント
+  // React.FormEvent<HTMLFormElement>:HTML<form>タグのイベント
   const handleSubmit = async (evt: React.FormEvent<HTMLFormElement>) => {
+    // 送るデータ確認
+    console.log("DEBUG: Sending data ->", {
+      date: formDraft.date,
+      type: formDraft.type,
+      categoryId: formDraft.categoryId,
+      title: formDraft.title,
+      amount: formDraft.amount,
+      amountType: typeof formDraft.amount, // 型も確認
+    });
     evt.preventDefault(); //preventDefault：自動リロード防止
 
     const errorMessage = validateTransaction(formDraft);
